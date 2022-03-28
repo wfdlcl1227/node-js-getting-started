@@ -4,11 +4,11 @@ const jsSHA = require('jssha')
 const PORT = process.env.PORT || 5000
 const fs = require('fs')
 const bodyParser = require('body-parser')
-var http = require('http')
+//var http = require('http')
 var url = require('url')
 var util = require('util')
-var querystring = require('querystring');
-
+//var querystring = require('querystring')
+var request = require('request')
 
 
 var app = express();
@@ -51,66 +51,78 @@ function calculateWechatSign(req, res) {
 }
 
 function sendMessage(req, res) {
-  var token = req.body.access_token;
-  callWechatMassMessageAPI(token);
-  res.send("success");
+  var body = req.body;
+  
+
+
+
+
+  getWechatToken().then(data=>{callWechatMassMessageAPI(data, body)}).then(function() {
+    res.send("success");
+  })
 }
 
 
-/*
+
 function getWechatToken() {
-    const url = `http://api.weixin.qq.com/cgi-bin/token?grant_type=client_credential&appid=${this.appId}&secret=${this.appSecret}`
-    // 返回accesstoken格式如下
-    // {
-    //     "access_token":"string",
-    //     "expires_in":7200
-    // }
-    return new Promise((resolve, reject) => {
-        request(url, function(err, response, body){
-            var accessToken = JSON.parse(response.body)
-            accessToken['expires_in'] = Date.parse(new Date())+((7200 - 20)*1000)
-            fs.writeFileSync(path.resolve(__dirname, './token.txt') , JSON.stringify(accessToken))
-            resolve(accessToken.access_token)
-        })
+  let url = 'http://api.weixin.qq.com/cgi-bin/token?grant_type=client_credential&appid=wx79cbf5ebff286203&secret=47c44be9e62db3d8102ad1a138834bc7';
+  // 返回accesstoken格式如下
+  // {
+  //     "access_token":"string",
+  //     "expires_in":7200
+  // }
+  return new Promise((resolve, reject) => {
+    request(url, function (err, response, body) {
+      var accessToken = JSON.parse(response.body);
+      
+      accessToken['expires_in'] = Date.parse(new Date()) + ((7200 - 20) * 1000);
+      fs.writeFileSync(path.resolve(__dirname, './token.txt'), JSON.stringify(accessToken));
+      resolve(accessToken.access_token);
     })
-}*/
+  })
+}
 
 
-function callWechatMassMessageAPI(token) {
-  var options = {
-    host: 'api.weixin.qq.com',
-    path:'/cgi-bin/message/mass/send?access_token=55_sY3zol29qXeV4zf9KVsCYcyrlRKVVZfOBXgPz394lAWiT2NTFtM-etXgGrulZK267Otxpk5d15rqz11bEMe4wGxt8fF5u7hpVVo27nhErN-ATWux62xvqB11pBGzJVGO-9IWLddiD6M8Ea3mFCDbAJAPMN',
-    method: 'POST'
-  };
-
-  var reqBody = {
+function callWechatMassMessageAPI(token, reqBody) {
+  console.log('token==>'+ token);
+  /*群發API*/
+  /*
+  {
     "touser": [
       "oPZRb5rSlSMKCa1BQleoeLhQmlhA",
       "oPZRb5mVyPAWZEVdvfFqarxHs85k"
     ],
     "msgtype": "text",
     "text": {
-      "content": "hello from test."
+      "content": "hello from test vs code."
     }
-  }
-
-  var post_data = querystring.stringify(reqBody);
-
-
-
-  var req = http.request(options, function (res) {
-    console.log('STATUS: ' + res.statusMessage);
-    console.log('HEADERS: ' + JSON.stringify(reqBody));
-    res.setEncoding('utf8');
-    res.on('data', function (chunk) {
-      console.log('BODY: ' + chunk);
-    });
-  });
-
-  // write data to request body
-  req.write(post_data + "\n");
-  req.end();
+  }*/
+  //let url = 'https://api.weixin.qq.com/cgi-bin/message/mass/send?access_token=' + token;
+  
 
 
+  //客服單條
+  
+  let url = 'https://api.weixin.qq.com/cgi-bin/message/custom/send?access_token=' + token;
 
+  return new Promise((resolve, reject) => {
+    request({
+      url: url,
+      method: "POST",
+      json: true,
+      headers: {
+        "content-type": "application/json",
+      },
+      body: reqBody
+    }, function (error, response, body) {
+      if (!error && response.statusCode == 200) {
+        console.log('resp' + JSON.stringify(response.body));
+        resolve(response.body);
+      } else {
+        console.log('errorMsg' + response.statusMessage);
+        console.log('errorCode' + response.statusCode);
+        reject(response.statusMessage);
+      }
+    })
+  })
 }
