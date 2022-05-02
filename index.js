@@ -51,11 +51,18 @@ function calculateWechatSign(req, res) {
 }
 
 function sendMessage(req, res) {
-  var body = req.body;
-  
+  //var body = req.body;
+  console.log(req.body);
 
-
-
+  body =   {
+    "touser": [
+      "oPZRb5rSlSMKCa1BQleoeLhQmlhA",
+      "oPZRb5mVyPAWZEVdvfFqarxHs85k"
+    ],
+    "msgtype": "text",
+    "text": {
+      "content": "hello from test vs code."
+    }};
 
   getWechatToken().then(data=>{callWechatMassMessageAPI(data, body)}).then(function() {
     res.send("success");
